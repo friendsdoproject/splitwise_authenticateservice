@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: vzcalendar API
+  description: VzCalendar is an Employee Time Management tool, allows teams to manage employee’s schedule & tracking time. It allows teams to create & set-up a calendar for employees of the team. Managers can review & approve the employee’s leave requests using the tool.
+  version: 0.0.1
+  contact:
+    name: API Support
+    url: http://api.example.com/v1
+
+servers:
+  - url: http://localhost:3005
+    description: local server
+  - url: http://{servername}:{port}
+    description: localhost server for testing
+    variables:
+      servername:
+        enum:
+          - localhost
+        default: localhost
+        description: This value is assigned by service provider
+      port:
+        enum:
+          - 3000
+          - 3005
+        default: 3005
+  - url: http://{servername}:{portno}
+    description: localhost server for testing
+    variables:
+      servername:
+        default: localhost
+        description: This value is assigned by service provider
+      portno:
+        default: 3005
+  - url: http://{domainname}/{sitename}
+    description: localhost server for testing
+    variables:
+      domainname:
+        default: utopiaapps-uat.ebiz.verizon.com
+        description: This value is assigned by service provider
+      sitename:
+        default: VzCalendarV3API
+  - url: https://utopiaapps-uat.ebiz.verizon.com/VzCalendarV3API
+    description: UAT server
+
+components:
+  parameters:
+    userVzidQueryParam:
+      name: userVzid
+      in: query
+      required: true
+      schema:
+        type: string
+    calendarTypeQueryParam:
+      name: calendarType
+      in: query
+      required: true
+      schema:
+        type: string
+  schemas:
+    Token:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    User:
+      type: object
+      properties:
+        idUser:
+          type: integer
+        txtFirstName:
+          type: string
+        txtMiddleName:
+          type: string
+        txtLastName:
+          type: string
+        txtVzid:
+          type: string
+        txtEmailID:
+          type: string
+        txtPhone:
+          type: string
+        dtCreatedOn:
+          type: string
+          format: date
+        txtCreatedBy:
+          type: string
+        dtUpdatedOn:
+          type: string
+          format: date
+        txtUpdatedBy:
+          type: string
+        YnActive:
+          type: boolean
+        YnApproval:
+          type: boolean
+  responses:
+    InternalServerError:
+      description: |
+        An error occured while processing the request.
+        Please contact the respective support team
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+    Unauthorized:
+      description: Unauthorized user without Bearer Token
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errorMessage:
+                type: string
+    Forbidden:
+      description: Request is Forbidden due to JsonWebToken Error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              message:
+                type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - auth
+      summary: Login for VzCalendar
+      description: Allows valid user to Login into Application and returns userdetails along with AccessToken and RefreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                txtVzid:
+                  type: string
+              required:
+                - txtVzid
+      responses:
+        "200":
+          description: UserDetail along with Access and Refresh Token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [userDetails, accessToken, refreshToken]
+                  properties:
+                    userDetails:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/User"
+                    accessToken:
+                      type: string
+                    refreshToken:
+                      type: string
+                    errorMessage:
+                      type: string
+
+  /api/calendar/getGroupNameList:
+    get:
+      tags:
+        - calendar
+      summary: Gets list of GroupName for Calender-Setup
+      description: Returns list of all group names by passing userVzID
+      parameters:
+        - $ref: "#/components/parameters/userVzidQueryParam"
+      responses:
+        "200":
+          description: GroupNames retrieved Successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    GrpId:
+                      type: integer
+                    GrpName:
+                      type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/calendar/getAllGroupNamesForCalendar:
+    get:
+      tags:
+        - exception
+      summary: Gets list of GroupName for Exception-Calendar
+      description: Returns list of group names by passing userVzID and CalendarType
+      parameters:
+        - $ref: "#/components/parameters/userVzidQueryParam"
+        - $ref: "#/components/parameters/calendarTypeQueryParam"
+      responses:
+        "200":
+          description: GroupNames retrieved Successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    GrpId:
+                      type: integer
+                    GrpName:
+                      type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/calendar/getRetentionList:
+    get:
+      tags:
+        - calendar
+      summary: Gets Retention List for Calendar-Setup
+      description: Returns list of retention period
+      responses:
+        "200":
+          description: Retention List retrieved Successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    idRetention:
+                      type: integer
+                    txtRetentionPeriod:
+                      type: string
+                    numMonths:
+                      type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/refreshToken:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - auth
+      summary: Validates Refresh Token and sends back new Access Token along with brand new Refresh Token
+      description: Sends Access Token along wiht Refresh Token for accessing other API Resource
+      responses:
+        "200":
+          description:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/manageapp/getAllAdminDetails:
+    get:
+      tags:
+        - exception
+      summary: Gets all of AdminDetails for System Admin
+      description: Returns list of Admin names
+      responses:
+        "200":
+          description: AdminDetails retrieved Successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    idRoleUser:
+                      type: integer
+                    VZID:
+                      type: string
+                    UserName:
+                      type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
